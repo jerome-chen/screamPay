@@ -87,13 +87,6 @@ V1.0.0 |2018-12-08 |首次发布
 ```
 3.application-dev.yml为开发配置。
 ```html
-qhpay:
-  #平台RSA公钥，现在配置文件里的已经作废，从后台"系统参数配置"设置。
-  publicKey: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCMlNqJh3JG6shlMJ0OJ42QnuG9OVUiBlcpbUXbaaprUjF1XTqDaUJZLvk5fkRDAgZAC/CbyYOOoZBpp8y3CnnCSPtJ8oKoLuQOcN1hW4snE0VP+J2wKMQQyjmzFK4MiRRDE6oxD2nWFe517zl8IOJYZWK3egTIXezoidLG0bucZwIDAQAB
-  #平台私钥，现在配置文件里的已经作废，从后台"系统参数配置"设置。
-  privateKeyPath: D:/var/key/privateKey.txt
-  #文件上传路径，优先使用后台“系统参数配置”设置进去的参数。
-  uploadPath: D:/var/uploaded_files/
 #log等级
 logging:
   level:
@@ -169,14 +162,20 @@ spring:
       queueCapacity: 100  
       threadNamePrefix: myThreadPool 
 redisson:
-  password: 
+  password: redis
   # 单机模式
   address: redis://127.0.0.1:6379
   # 哨兵模式
   #master-name: mymaster
   #sentinel-addresses: redis://192.168.1.188:26379,redis://192.168.1.188:26479,redis://192.168.1.188:26579
 ```
+4.后台默认登录账户／密码为：admin/123456
+
+5.application-dev.yml和application-pro.yml配置文件里是设置了redis密码的，注意要和自己的redis保持一致。
 	
+6.logback.xml指定了日志输出目录，有问题可以查看日志。
+
+7.这是一个Maven项目，请以Maven项目导到IDE。
 
 
 作者已成功将项目部署在阿里云主机上，服务器配置为：
@@ -191,7 +190,7 @@ redisson:
 |---|---|---
 |JDK | 1.8 | spring boot 对低版支持没有测过
 |Redis| 4.0.10 | 
-|MySQL | 5.7.17 | 要在5.6以上，否则初始化SQL会报错，除非手动修改建表语句
+|MySQL | 5.7.17 |
 
 ### 关于作者
 ***
@@ -199,8 +198,8 @@ redisson:
 
 QQ : 254939589
 
-微信：wangqingzhuofeng
+微信：
+![微信](http://star.agcde.xyz/wp-content/uploads/2018/12/个人二维码.jpeg  "龚丁禧个人微信")
 
-手机：18750261781
 
 [龚丁禧个人主页](http://star.agcde.xyz "龚丁禧个人主页")
