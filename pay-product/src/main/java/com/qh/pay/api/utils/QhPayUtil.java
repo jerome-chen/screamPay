@@ -1,5 +1,6 @@
 package com.qh.pay.api.utils;
 
+import com.qh.common.config.CfgKeyConst;
 import com.qh.redis.RedisConstants;
 import com.qh.redis.service.RedisUtil;
 import com.qh.system.domain.ConfigDO;
@@ -42,7 +43,7 @@ public class QhPayUtil {
 	 */
 	public static String getMerchNoPrefix(){
 		if("".equals(QhPayUtil.merchNoPrefix)) {
-			ConfigDO config = (ConfigDO)RedisUtil.getRedisTemplate().opsForHash().get(RedisConstants.cache_config, "merchNoPrefix");
+			ConfigDO config = (ConfigDO)RedisUtil.getRedisTemplate().opsForHash().get(RedisConstants.cache_config, CfgKeyConst.merchNoPrefix);
 			if(config!=null) {
 				QhPayUtil.setMerchNoPrefix(config.getConfigValue());
 			}
@@ -61,7 +62,7 @@ public class QhPayUtil {
 	 */
 	public static String getAgentNoPrefix(){
 		if("".equals(QhPayUtil.agentNoPrefix)) {
-			ConfigDO config = (ConfigDO)RedisUtil.getRedisTemplate().opsForHash().get(RedisConstants.cache_config, "agentNoPrefix");
+			ConfigDO config = (ConfigDO)RedisUtil.getRedisTemplate().opsForHash().get(RedisConstants.cache_config, CfgKeyConst.agentNoPrefix);
 			if(config!=null) {
 				QhPayUtil.setAgentNoPrefix(config.getConfigValue());
 			}
@@ -100,7 +101,7 @@ public class QhPayUtil {
 	 */
 	public static String getQhPublicKey(){
 		if("".equals(QhPayUtil.qhPublicKey)) {
-			ConfigDO config = (ConfigDO)RedisUtil.getRedisTemplate().opsForHash().get(RedisConstants.cache_config, "publicKeyPath");
+			ConfigDO config = (ConfigDO)RedisUtil.getRedisTemplate().opsForHash().get(RedisConstants.cache_config, CfgKeyConst.platformPublicKey);
 			if(config!=null) {
 				QhPayUtil.setQhPublicKey(config.getConfigValue());
 			}
@@ -119,7 +120,7 @@ public class QhPayUtil {
 	public static String getQhPrivateKey(){
 		
 		if("".equals(QhPayUtil.qhPrivateKey)) {
-			ConfigDO config = (ConfigDO)RedisUtil.getRedisTemplate().opsForHash().get(RedisConstants.cache_config, "privateKeyPath");
+			ConfigDO config = (ConfigDO)RedisUtil.getRedisTemplate().opsForHash().get(RedisConstants.cache_config, CfgKeyConst.platformPrivateKey);
 			if(config!=null) {
 				QhPayUtil.setQhPrivateKey(config.getConfigValue());
 			}

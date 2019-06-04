@@ -321,7 +321,7 @@ public class PayQrController {
      * @return
      * @Description 扫码通道支付后台通知
      */
-    @PostMapping("/qr/notify/{merchNo}/{outChannel}/{accountNo}")
+    @RequestMapping("/qr/notify/{merchNo}/{outChannel}/{accountNo}")
     @ResponseBody
     public JSONObject notifyQr(@PathVariable("merchNo") String merchNo, @PathVariable("outChannel") String outChannel,
             @PathVariable("accountNo") String accountNo,HttpServletRequest request) {
@@ -331,21 +331,24 @@ public class PayQrController {
 		} catch (UnsupportedEncodingException e) {
 			logger.info("编码错误");
 		}
-        String monAmount = request.getParameter("amount");
-        String businessNo = request.getParameter("tradeNo");
-
+        String monAmount = request.getParameter("money");
+        String businessNo = request.getParameter("time");
+ 
         /**   心跳/支付回调 标记  心跳:timePost   支付回调:up    **/
         String todo = request.getParameter("todo");
         if ("timePost".equals(todo)) {
             return syncCheck(merchNo,outChannel,accountNo,request);
         }else if("up".equals(todo)){
+            logger.info("个码支付异步回调："+merchNo + "    " + outChannel + "     "+ accountNo);
             //回调验签
             if (verifySign(merchNo, outChannel, accountNo,request)) {
                 //业务逻辑处理
             	String msg = null;
 				try {
                     syncCheck(merchNo,outChannel,accountNo,request);
-					msg = URLDecoder.decode( request.getParameter("time"),"UTF-8") + URLDecoder.decode( request.getParameter("username"),"UTF-8");
+					msg = URLDecoder.decode( request.getParameter("uname"),"UTF-8") + 
+							"in time " + request.getParameter("time") + 
+							"paid "+monAmount;
 				} catch (UnsupportedEncodingException e) {
 					logger.error("参数解码失败，{}，{}","time","username");
 				}
@@ -360,14 +363,11 @@ public class PayQrController {
     
     
     private JSONObject syncCheck(String merchNo,String outChannel,String accountNo,HttpServletRequest request) {
-        String v = request.getParameter("v");
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
         Date date = new Date();
         JSONObject jsonObj = new JSONObject();
-        jsonObj.put("S", "0");
+        jsonObj.put("code", "0");
         jsonObj.put("msg", "timepost do nothing");
-        jsonObj.put("T", sdf.format(date));
-        jsonObj.put("V", v);
+        jsonObj.put("time", date.getTime() / 1000);
         RedisUtil.setQrGatewayLastSyncTime(merchNo,outChannel,accountNo,date.getTime());
         logger.info(""+merchNo + "    " + outChannel + "     "+ accountNo);
         logger.info(""+RedisUtil.getQrGatewayLastSyncTime(merchNo, outChannel,accountNo));
@@ -394,19 +394,16 @@ public class PayQrController {
 				return false;
 			}
 			TreeMap<String, String> params = RequestUtils.getRequestParam(request);
-			String tradeNo = params.get("tradeNo");
-			String status = params.get("status");
-			if(outChannel.equals(OutChannel.jfali.name())){
-                tradeNo = URLDecoder.decode(tradeNo,"UTF-8");
-                status = URLDecoder.decode(params.get("status"),"UTF-8");
-            }
-			String[] obj = {tradeNo,URLDecoder.decode(params.get("desc"),"UTF-8"),URLDecoder.decode(params.get("time"),"UTF-8"),URLDecoder.decode(params.get("username"),"UTF-8"),params.get("userid"),params.get("amount"),status,apiKey};
-			String str = String.join("|", obj);
-			logger.info(str);
-			String sig = params.get("sig");
-			String sign = Md5Util.MD5(str);
-			logger.info("原签名："+sig+"；现签名："+sign);
-			if(sign.equalsIgnoreCase(sig)){
+//	        String sign = MD5(account + apikey + time + rndStr  + money);
+			String sign = params.get("sign");
+			String money = params.get("money");
+			String time = params.get("time");
+			String rndStr = params.get("rndstr");
+			
+			String source = accountNo + apiKey + time + rndStr + money;
+			String localSign = Md5Util.MD5(source);
+			logger.info("原签名："+sign+"；现签名："+localSign);
+			if(sign.equalsIgnoreCase(localSign)){
                 RedisUtil.setQrGatewayLastSyncTime(merchNo,outChannel,accountNo,new Date().getTime());
                 return true;
             }

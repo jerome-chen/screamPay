@@ -9,7 +9,6 @@ import com.qh.pay.api.constenum.AcctType;
 import com.qh.pay.api.constenum.AgentLevel;
 import com.qh.pay.api.constenum.AuditResult;
 import com.qh.pay.api.constenum.BankCode;
-import com.qh.pay.api.constenum.CardType;
 import com.qh.pay.api.constenum.CertType;
 import com.qh.pay.api.constenum.OutChannel;
 import com.qh.pay.api.constenum.PayChannelType;
@@ -22,7 +21,6 @@ import com.qh.pay.api.utils.ParamUtil;
 import com.qh.pay.api.utils.QhPayUtil;
 import com.qh.pay.api.utils.RSAUtil;
 import com.qh.pay.domain.Agent;
-import com.qh.pay.domain.IndustryDO;
 import com.qh.pay.domain.Merchant;
 import com.qh.pay.domain.PayAcctBal;
 import com.qh.pay.domain.PayConfigCompanyDO;
@@ -39,19 +37,23 @@ import net.sf.json.JSONObject;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.WebRequest;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
- * 聚富商户
+ * 商户管理
  * 
  * @date 2017-11-01 10:05:41
  */
@@ -59,6 +61,8 @@ import java.util.Map;
 @Controller
 @RequestMapping("/pay/merchant")
 public class MerchantController {
+	private static final Logger logger = LoggerFactory.getLogger(MerchantController.class);
+
 	@Autowired
 	private MerchantService merchantService;
 	@Autowired
@@ -72,8 +76,6 @@ public class MerchantController {
 	private LocationService locationService;
 	@Autowired
 	private PayConfigCompanyService payConfigCompanyService;
-
-
 
 	@GetMapping()
 	@RequiresPermissions("pay:merchant:merchant")
@@ -193,7 +195,12 @@ public class MerchantController {
 		model.addAttribute("parentPaid", parentPaid);
 		return "pay/merchant/rate";
 	}
-	
+
+	/**
+	 * 新增商户中转页面
+	 * @param model
+	 * @return
+	 */
 	@GetMapping("/add")
 	@RequiresPermissions("pay:merchant:add")
 	String add(Model model){
@@ -226,8 +233,28 @@ public class MerchantController {
 	    return "pay/merchant/add";
 	}
 
+	/**
+	 * @Description 新增全局方法，解决时间字符串解决异常
+	 * @author huangjj
+	 * @email  81476724@qq.com
+	 * @EditDate  2018年12月18日 上午11:27:37
+	 * @Content 新增方法
+	 *
+	 */
+	@InitBinder
+	public void initBinder(WebDataBinder binder, WebRequest request) {
+		//转换日期
+		DateFormat dateFormat=new SimpleDateFormat("yyyy-MM-dd");
+		// CustomDateEditor为自定义日期编辑器
+		binder.registerCustomEditor(Date.class, new CustomDateEditor(dateFormat, true));
+	}
 
-
+	/**
+	 * 查看/修改
+	 * @param merchNo 商户号
+	 * @param model
+	 * @return
+	 */
 	@GetMapping("/edit/{merchNo}")
 	@RequiresPermissions("pay:merchant:edit")
 	String edit(@PathVariable("merchNo") String merchNo,Model model){
@@ -404,7 +431,7 @@ public class MerchantController {
 	}
 	
 	/**
-	 * 保存
+	 * 保存新增商户信息
 	 */
 	@SuppressWarnings("unchecked")
 	@ResponseBody
@@ -479,7 +506,6 @@ public class MerchantController {
 	/**
 	 * 修改实名
 	 */
-	@SuppressWarnings("unchecked")
 	@ResponseBody
 	@RequestMapping("/updateRealName")
 	@RequiresPermissions("pay:merchant:edit")
@@ -670,6 +696,12 @@ public class MerchantController {
 		return list;
 	}
 
+	/**
+	 * 发送邮件
+	 * @param merchNo 商户号
+	 * @param state   状态
+	 * @return
+	 */
 	@PostMapping( "/sendEmail")
 	@RequiresPermissions("pay:merchant:sendEmail")
 	@ResponseBody
@@ -682,25 +714,30 @@ public class MerchantController {
 		if(RedisUtil.getHashValue(CfgKeyConst.email_message,merchNo)!=null&&state==0){
 			return  R.error("已发送邮箱");
 		}
-
+		//商户平台登录密码
 		String password=RedisUtil.getSysConfigValue(CfgKeyConst.pass_default_merch);
 		/*if(password==null||"".equals(password)){
 			password = ParamUtil.random(100000,999999)+"";
 			merchant.setManagerPass(password);
 			merchantService.update(merchant);
 		}*/
+		// 商户接收邮件邮箱地址
 		String email =merchant.getContactsEmail();
+		// 商户私钥
 		String privateKey= RedisUtil.getHashValue(CfgKeyConst.qhPrivateKey,merchNo).toString();
 
-		ConfigDO config = (ConfigDO)RedisUtil.getRedisTemplate().opsForHash().get(RedisConstants.cache_config, "publicKeyPath");
+		ConfigDO config = (ConfigDO)RedisUtil.getRedisTemplate().opsForHash().get(RedisConstants.cache_config, CfgKeyConst.platformPublicKey);
 		if(config==null){
 			return R.error("请先配置公钥路径！");
 		}
+		// 平台地址
 		String paydoMain = RedisUtil.getSysConfigValue(CfgKeyConst.pay_domain);
 		if(paydoMain==null||"".equals(paydoMain)){
 			return R.error("请先配置平台地址！");
 		}
+		// 组装邮件发送的html内容
 		String html =SendMailUtil.getHtml(paydoMain,config.getConfigValue(),privateKey,merchNo,password);
+		logger.info("merchNo="+merchNo+ ";privateKey="+privateKey);
 		R r = SendMailUtil.sendEmail(email,html);
 		if(R.ifSucc(r)) {
 			RedisUtil.setHashValue(CfgKeyConst.email_message,merchNo,html);
