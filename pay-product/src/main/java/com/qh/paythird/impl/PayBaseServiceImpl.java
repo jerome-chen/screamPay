@@ -24,6 +24,8 @@ import com.qh.paythird.bopay.BopayService;
 import com.qh.paythird.dianxin.DianXinService;
 import com.qh.paythird.jiupay.JiupayService;
 import com.qh.paythird.mobao.MoBaoService;
+import com.qh.paythird.mybank.MybankPayService;
+import com.qh.paythird.personAlipay.PersonAlipayService;
 import com.qh.paythird.sand.SandPayService;
 import com.qh.paythird.wft.WeiFuTongService;
 import com.qh.paythird.xiaotian.XiaoTianService;
@@ -74,6 +76,10 @@ public class PayBaseServiceImpl implements PayBaseService{
 	private WeiFuTongService weiFuTongService;
 	@Autowired
 	private AllipayService allipayService;
+	@Autowired
+	private PersonAlipayService personAlipayService;
+	@Autowired
+	private MybankPayService mybankPayService;
 
 	/* (非 Javadoc)
 	 * Description:
@@ -139,6 +145,12 @@ public class PayBaseServiceImpl implements PayBaseService{
 				break;
 			case allipay:
 				result = allipayService.order(order);
+				break;
+			case palipay:
+				result = personAlipayService.order(order);
+				break;
+			case mybank:
+				result = mybankPayService.order(order);
 				break;
 			default:
 				logger.error("未找到支付公司！");
@@ -213,6 +225,12 @@ public class PayBaseServiceImpl implements PayBaseService{
 			case allipay:
 				result = allipayService.notify(order, request);
 				break;
+			case palipay:
+				result = personAlipayService.notify(order, request, requestBody);
+				break;
+			case mybank:
+				result = mybankPayService.notify(order, request, requestBody);
+				break;
 			default:
 				logger.error("未找到支付公司！");
 				result = R.error("未找到支付公司！");
@@ -284,6 +302,9 @@ public class PayBaseServiceImpl implements PayBaseService{
 				break;
 			case allipay:
 				result = allipayService.query(order);
+				break;
+			case palipay:
+				result = personAlipayService.query(order);
 				break;
 			default:
 				logger.error("未找到支付公司！");
